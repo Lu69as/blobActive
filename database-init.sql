@@ -31,7 +31,7 @@ create table exercises (
 	planId int,
 	name varchar(50),
 	sets int,
-	reps int,
+	reps varchar(20),
 	weight varchar(50) null,
 	foreign key (planId) references plans(planId) ON DELETE CASCADE
 );

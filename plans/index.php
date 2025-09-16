@@ -7,7 +7,7 @@
     if (!isset($queries["p"])) header("Location: ../");
     $pagePlan = $queries["p"];
 
-    $exercisesPlanQuery = "SELECT p.name AS planName, p.userId, p.planHistory, e.exerciseId, e.name, e.sets, e.reps, e.weight 
+    $exercisesPlanQuery = "SELECT p.groupId, p.name AS planName, p.userId, p.planHistory, e.exerciseId, e.name, e.sets, e.reps, e.weight 
         FROM plans p LEFT JOIN exercises e ON e.planId = p.planId WHERE p.planId = ".$pagePlan;
     $exercisesPlanResult = $connBlobActive->query($exercisesPlanQuery);
 
@@ -16,6 +16,7 @@
     $planHistory = json_decode($firstRow["planHistory"], true);
     $isAdmin = $firstRow["userId"] == $_COOKIE["blob_user"];
     $planName = $firstRow["planName"];
+    $groupIdPage = $firstRow["groupId"];
     $exercisesPlanResult->data_seek(0);
 ?>
 <!DOCTYPE html>
@@ -33,9 +34,9 @@
 <body>
     <section class="mainWidget">
         <div class="editBtns">
-            <a class="backBtn btn1" href="../">Back</a>
+            <a class="backBtn btn1" href="../groups/?g=<?php echo $groupIdPage ?>">Back</a>
             <?php if ($isAdmin) { ?>
-                <a class="edit btn1" onclick="document.querySelector('.editForm').classList.toggle('invisible')">Edit Group</a>
+                <a class="edit btn1" onclick="document.querySelector('.editForm').classList.toggle('invisible')">Edit Plan</a>
             <?php }; ?>
         </div>
         <div class="plan"><nav><?php
@@ -62,8 +63,8 @@
                     while ($row = $exercisesPlanResult->fetch_assoc()) {
                         echo "<tr id='exercise_".$row["exerciseId"]."'>
                             <td class='exer_name'><input type='text' value='".$row["name"]."'></td>
-                            <td class='exer_sets'><input type='number' value='".$row["sets"]."'></td>
-                            <td class='exer_reps'><input type='number' value='".$row["reps"]."'></td>
+                            <td class='exer_sets'><input type='text' inputmode='numeric' value='".$row["sets"]."'></td>
+                            <td class='exer_reps'><input type='text' value='".$row["reps"]."'></td>
                             <td class='exer_weight'><input type='text' value='".$row["weight"]."'></td>";
                         if (!$isAdmin) {
                             echo "<script>document.querySelectorAll('.planTable input, button').forEach((e) => {
@@ -79,7 +80,7 @@
         <?php if ($isAdmin) { ?>
             <form class="underTableBtns" action='../queries/exercise-update.php' method="post">
                 <input type="hidden" name="page_plan" value="<?php echo $pagePlan; ?>"/>
-                <input type="hidden" name="currentPlanHistory" value='<?php echo json_encode($planHistory); ?>'/>
+                <input type="hidden" name="currentPlanHistory" value='<?php echo (json_encode($planHistory) == "null" ? "[]" : json_encode($planHistory)); ?>'/>
                 <input type="hidden" name="newPlanHistory"/>
                 <input class="add_exercise" type="submit" name="add_exercise" value="+ Add exercise"/>
                 <input class="finish_exercise" type="submit" name="finish_exercise" value="✓ Add to history"/>

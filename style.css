@@ -2,7 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Racing+Sans+One&display=swap');
 
-html { scroll-behavior: smooth; }
+html {
+    scroll-behavior: smooth;
+}
 
 /* CSS Variables */
 :root {
@@ -408,6 +410,7 @@ section.mainWidget {
         > * {
             width: 100%;
             text-align: center;
+            justify-content: center;
         }
     }
 
@@ -465,9 +468,9 @@ section.mainWidget {
         .addPlanBtn { width: 45px !important; }
     }
 
-    .editForm > div input { min-width: 50px !important; }
-    .editForm > div button span { display: none; }
-    .editForm > div button::before { margin: 0 !important; }
+    .editForm div input { min-width: 50px !important; }
+    .editForm div button span { display: none; }
+    .editForm div button::before { margin: 0 !important; }
 }
 
 /* Fixed up styling for mobile devices */

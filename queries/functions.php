@@ -1,8 +1,12 @@
 <?php
+    date_default_timezone_set("Europe/Oslo");
     function getDBConnection($db) {
         static $conn;
         if ($conn === null) {
-            $conn = new mysqli("localhost", "root", "", $db);
+            $conn = ($db == "blob_active" ?
+                new mysqli("localhost", "luka_blob_active", "Udcc.eiZei@#", "luka_blob_active"):
+                new mysqli("localhost", "luka_blob", "[kP=d[aWPrb#", "luka_blob"));
+                
             if ($conn->connect_error) {
                 die("Tilkoblingsfeil: " . $conn->connect_error);
             }

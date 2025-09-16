@@ -1,0 +1,5 @@
+[15-Sep-2025 10:51:17 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '' at line 2 in /home6/luka/public_html/blobActive/plans/index.php:12
+Stack trace:
+#0 /home6/luka/public_html/blobActive/plans/index.php(12): mysqli->query('SELECT p.name A...')
+#1 {main}
+  thrown in /home6/luka/public_html/blobActive/plans/index.php on line 12

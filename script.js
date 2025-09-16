@@ -26,7 +26,7 @@ function updateNewHistory() {
 }
 
 window.addEventListener("load", () => {
-    if (location.href.includes("/plans/"))updateNewHistory();
+    if (location.href.includes("/plans/")) updateNewHistory();
     document.querySelectorAll(".planTable td > input").forEach((e) => { e.addEventListener("change", () => {
         updateNewHistory();
         let id = e.parentElement.parentElement.id.replace("exercise_", "");
@@ -37,6 +37,9 @@ window.addEventListener("load", () => {
         xmlhttp.open("GET", `../queries/exercise-update.php?id=${id}&col=${col}&val=${e.value}`, true);
         xmlhttp.send();
     })});
+    
+    document.querySelectorAll(`input[inputmode='numeric']`).forEach((e) => e.addEventListener('input', () => { e.value = e.value.replace(/[^0-9]/g, '') }))
+    document.querySelectorAll(`input:not([inputmode='numeric'])`).forEach((e) => e.addEventListener('input', () => { e.value = e.value.replace(/[^A-Za-z0-9?!$%&', ]/g, '') }))
 
     document.querySelectorAll("form:is(.sign_up, .log_in)").forEach((e) => {
         checkForm(e);

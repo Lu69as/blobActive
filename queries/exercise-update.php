@@ -57,7 +57,7 @@
         header('Location: ' . $_SERVER['HTTP_REFERER']);
     }
     
-    // if(intval($_GET['id'])) 
-    //     $connBlobActive->query("UPDATE exercises set ".$_GET['col']." = '".$_GET['val']."' where exerciseId = ".$_GET['id']);
+    if(intval($_GET['id'])) 
+         $connBlobActive->query("UPDATE exercises set ".$_GET['col']." = '".$_GET['val']."' where exerciseId = ".$_GET['id']);
     exit;
 ?>
