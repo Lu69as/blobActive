@@ -4,8 +4,12 @@
         static $conn;
         if ($conn === null) {
             $conn = ($db == "blob_active" ?
-                new mysqli("localhost", "luka_blob_active", "Udcc.eiZei@#", "luka_blob_active"):
-                new mysqli("localhost", "luka_blob", "[kP=d[aWPrb#", "luka_blob"));
+                new mysqli("localhost", "root", "", "blob_active"):
+                new mysqli("localhost", "root", "", "blob"));
+
+                // Connections if on localhost
+                // new mysqli("localhost", "root", "", "blob_active"):
+                // new mysqli("localhost", "root", "", "blob"));
                 
             if ($conn->connect_error) {
                 die("Tilkoblingsfeil: " . $conn->connect_error);
