@@ -7,21 +7,22 @@
     if (!isset($queries["p"])) header("Location: ../");
     $pagePlan = $queries["p"];
 
-    $exercisesPlanQuery = "SELECT p.groupId, p.name AS planName, p.userId, p.planHistory, e.exerciseId, e.name, e.sets, e.reps, e.weight 
-        FROM plans p LEFT JOIN exercises e ON e.planId = p.planId WHERE p.planId = ".$pagePlan;
+    $exercisesPlanQuery = "SELECT p.groupId, p.planName, p.userId, e.exerciseId, e.exerciseName, pe.plan_exerciseId, count(s.setId) as setsNum,
+        group_concat(concat(s.setId, '||', s.setNote, '||', s.setLength , '||', s.weight) ORDER BY s.setId SEPARATOR '§§') as setsCol
+        FROM plans p LEFT JOIN plan_exercise pe ON pe.planId = p.planId LEFT JOIN exercises e ON pe.exerciseId = e.exerciseId 
+        LEFT JOIN sets s ON s.plan_exerciseId = pe.plan_exerciseId WHERE p.planId = ".$pagePlan." GROUP BY pe.plan_exerciseId";
     $exercisesPlanResult = $connBlobActive->query($exercisesPlanQuery);
 
     $firstRow = $exercisesPlanResult->fetch_assoc();
     if ($firstRow === null) { header("Location: ../"); }
-    $planHistory = json_decode($firstRow["planHistory"], true);
+    
     $isAdmin = $firstRow["userId"] == $_COOKIE["blob_user"];
     $planName = $firstRow["planName"];
-    $groupIdPage = $firstRow["groupId"];
-    $exercisesPlanResult->data_seek(0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="<?php echo $baseUrl; ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" sizes="180x180" href="../img/favicon/apple-touch-icon.png">
@@ -34,7 +35,7 @@
 <body>
     <section class="mainWidget">
         <div class="editBtns">
-            <a class="backBtn btn1" href="../groups/?g=<?php echo $groupIdPage ?>">Back</a>
+            <a class="backBtn btn1" href="../groups/?g=<?php echo $firstRow["groupId"] ?>">Back</a>
             <?php if ($isAdmin) { ?>
                 <a class="edit btn1" onclick="document.querySelector('.editForm').classList.toggle('invisible')">Edit Plan</a>
             <?php }; ?>
@@ -43,36 +44,50 @@
             echo '<h1>Blob<span>Active</span></h1><h3>Logged in as <span>'.$_COOKIE["blob_user"].'</span>
                  - Viewing exercise plan: <span>'.$planName.'</span></h3>';
         ?></nav>
-        <?php if ($isAdmin) { ?><div class="editForm <?php if ($groupName != "New group") echo "invisible" ?>">
-            <form class="editForm_form <?php if ($planName != "New plan") echo "invisible" ?>" action='../queries/exercise-update.php' method='post'><div>
-                <input type="hidden" name="page_plan" value="<?php echo $pagePlan; ?>"/>
-                <input type="text" class="rename_plan_txt btn1" name="rename_plan_txt" placeholder="New plan name" onkeydown="return event.key != 'Enter'">
-                <button class="rename_plan btn1" type="submit" name="rename_plan"><span>Rename</span></button>
-                <button class="delete_plan btn1" type="submit" name="delete_plan"><span>Delete plan</span></button>
-            </div></form>
-        </div><?php }; ?>
+        <?php if ($isAdmin) { ?>
+            <div class="editForm <?php if ($groupName != "New group") echo "invisible" ?>">
+                <form class="editForm_form <?php if ($planName != "New plan") echo "invisible" ?>" action='../queries/exercise-update.php' method='post'><div>
+                    <input type="hidden" name="page_plan" value="<?php echo $pagePlan; ?>"/>
+                    <input type="text" class="rename_plan_txt btn1" name="rename_plan_txt" placeholder="New plan name" onkeydown="return event.key != 'Enter'">
+                    <button class="rename_plan btn1" type="submit" name="rename_plan"><span>Rename</span></button>
+                    <button class="delete_plan btn1" type="submit" name="delete_plan"><span>Delete plan</span></button>
+                </div></form>
+            </div>
+        <?php }; ?>
         <table class="planTable">
-            <tr>
-                <th class="userColumn">Name</th>
-                <th>Sets</th>
-                <th>Reps / Time</th>
-                <th>Weight</th>
-            </tr>
             <?php
-                if (!empty($firstRow["exerciseId"])) {
+                $exercisesPlanResult->data_seek(0);
+                if (!empty($firstRow["plan_exerciseId"])) {
                     while ($row = $exercisesPlanResult->fetch_assoc()) {
-                        echo "<tr id='exercise_".$row["exerciseId"]."'>
-                            <td class='exer_name'><input type='text' value='".$row["name"]."'></td>
-                            <td class='exer_sets'><input type='text' inputmode='numeric' value='".$row["sets"]."'></td>
-                            <td class='exer_reps'><input type='text' value='".$row["reps"]."'></td>
-                            <td class='exer_weight'><input type='text' value='".$row["weight"]."'></td>";
-                        if (!$isAdmin) {
-                            echo "<script>document.querySelectorAll('.planTable input, button').forEach((e) => {
-                                let clearEvents = e.cloneNode(true); clearEvents.disabled = true;
-                                e.parentElement.replaceChild(clearEvents, e);})</script></tr>";
+                        $currentExercise = $row["plan_exerciseId"];
+                        echo "<tr id='exercise_$currentExercise'>
+                            <th class='exer_name'>".$row["exerciseName"]." - Notes</th>
+                            <th>Reps / Time</th><th>Weight</th>";
+
+                        if (!$isAdmin) echo "<script>document.querySelectorAll('.planTable input, .planTable button').forEach((e) => {
+                            let clearEvents = e.cloneNode(true); clearEvents.disabled = true; e.parentElement.replaceChild(clearEvents, e);})</script></tr>";
+
+
+                        $sets = explode("§§", $row["setsCol"]);
+                        for ($i = 0; $i < count($sets); $i++) {
+                            $setInfo = explode("||", $sets[$i]);
+
+                            echo "<tr class='set_row' id='set_$setInfo[0]' data-label='Set ".($i + 1).":'><td class='set_row_setNote'><input type='text' 
+                                placeholder='Notes for Set' value='$setInfo[1]'>".($i == 0 ? "<button onClick='toggleSetsView(this.parentElement.parentElement)'>></button>
+                                </td>" : "</td>")."<td class='set_row_setLength'><input type='text' placeholder='Reps / time' inputmode='numeric' value='$setInfo[2]'></td>
+                                <td class='set_row_weight'><input type='text' placeholder='Weight' value='$setInfo[3]'></td>";
+                            
+                            if ($isAdmin && $i == 0) echo "<td class='remove'><form action='../queries/exercise-update.php' method='post'><button type='submit'
+                                title='Remopve exercise from plan'>".file_get_contents('../img/icons/trash.svg')."</button><input name='remove_exercise' type='hidden' 
+                                value='$currentExercise'/></form></td></tr>";
+
+                            else if ($isAdmin) echo "<td class='remove'><form action='../queries/exercise-update.php' method='post'><button type='submit'
+                                title='Remove set from exercise'><span>_</span></button><input name='remove_set' type='hidden' value='$setInfo[0]'/></form></td></tr>";
+
+                            else echo "<td class='remove'></td></tr>";
                         }
-                        else echo "<td><form action='../queries/exercise-update.php' method='post'><button type='submit'>".file_get_contents('../img/icons/trash.svg')."</button>
-                            <input name='remove_exercise' type='hidden' value='".$row["exerciseId"]."'/></form></td></tr>";
+                        if ($isAdmin) echo "<tr class='set_row add_set'><td><form action='../queries/exercise-update.php' method='post'><button type='submit' 
+                            title='Add set to exercise'><span>+</span> Add set to exercise</button><input name='add_set' type='hidden' value='$currentExercise'/></form></td></tr>";
                     }
                 }
             ?>
@@ -80,25 +95,21 @@
         <?php if ($isAdmin) { ?>
             <form class="underTableBtns" action='../queries/exercise-update.php' method="post">
                 <input type="hidden" name="page_plan" value="<?php echo $pagePlan; ?>"/>
-                <input type="hidden" name="currentPlanHistory" value='<?php echo (json_encode($planHistory) == "null" ? "[]" : json_encode($planHistory)); ?>'/>
-                <input type="hidden" name="newPlanHistory"/>
+                <div class="add_exercise_id">
+                    <input type="hidden" name="add_exercise_id"/>
+                    <input type="text" class="add_exercise_search" name="add_exercise_search" placeholder="Write your exercise here"/>
+                    <ul><li id="exercise_addNew">Create new exercise</li><?php
+                        $exerciseListQuery = "SELECT exerciseId, exerciseName FROM exercises";
+                        $exerciseListResult = $connBlobActive->query($exerciseListQuery);
+                        if ($exerciseListResult->num_rows > 0) while ($row = $exerciseListResult->fetch_assoc()) 
+                            echo "<li id='exercise_".$row["exerciseId"]."'>".$row["exerciseName"]."</li>";
+                    ?></ul>
+                </div>
                 <input class="add_exercise" type="submit" name="add_exercise" value="+ Add exercise"/>
-                <input class="finish_exercise" type="submit" name="finish_exercise" value="✓ Add to history"/>
+                <!-- <input class="finish_exercise" type="submit" name="finish_exercise" value="✓ Add to history"/> -->
             </form>
         <?php }; ?>
-        <div class="plan_history">
-            <a onclick="this.parentElement.querySelector('p').classList.toggle('visible');">Show plan history</a>
-            <!-- <a onclick="this.nextElementSibling.classList.toggle('visible');">Update plan history</a> -->
-            <p><?php
-            if ($planHistory != null) {
-                foreach ($planHistory as $dt) {
-                    echo "<b>".$dt["date"].":</b><br>";
-                    foreach ($dt["exercises"] as $ex) echo $ex."<br>";
-                    echo "<br>";
-                }
-            } else echo "History of this plan is empty";
-            ?></p>
-        </div></div>
+    </div>
     </section>
     <script src="../script.js"></script>
 </body>

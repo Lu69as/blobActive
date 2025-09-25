@@ -1,6 +1,12 @@
+<?php
+    require_once "./queries/functions.php";
+    $queries = array();
+    parse_str($_SERVER['QUERY_STRING'], $queries);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="<?php echo $baseUrl; ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" sizes="180x180" href="./img/favicon/apple-touch-icon.png">
@@ -11,11 +17,6 @@
     <link rel="stylesheet" href="./style.css">
     <title>BlobActive</title>
 </head>
-<?php
-    require_once "./queries/functions.php";
-    $queries = array();
-    parse_str($_SERVER['QUERY_STRING'], $queries);
-?>
 <body>
     <section class="mainWidget"><?php
         if(!isset($_COOKIE["blob_user"])) {
@@ -54,8 +55,8 @@
             </div><?php
         } else {
             $connBlobActive = getDBConnection("blob_active");
-            $groupsListQuery = "SELECT g.groupId, g.name, GROUP_CONCAT(gu.userId SEPARATOR ', ') AS users
-                FROM groups g JOIN groups_users gu ON g.groupId = gu.groupId GROUP BY g.groupId, g.name
+            $groupsListQuery = "SELECT g.groupId, g.groupName, GROUP_CONCAT(gu.userId SEPARATOR ', ') AS users
+                FROM groups g JOIN group_users gu ON g.groupId = gu.groupId GROUP BY g.groupId, g.groupName
                 HAVING users LIKE '%".$_COOKIE["blob_user"]."%'";
             $groupsListResult = $connBlobActive->query($groupsListQuery);
 
@@ -67,7 +68,7 @@
                     if ($groupsListResult->num_rows > 0) {
                         while($row = $groupsListResult->fetch_assoc()) {
                             echo '<a href="./groups/?g='.$row["groupId"].'">'.file_get_contents("./img/icons/lockers.svg").'<p class="g_name">'.
-                                $row["name"].'</p><p class="g_users">'.$row["users"].'</p></a>';
+                                $row["groupName"].'</p><p class="g_users">'.$row["users"].'</p></a>';
                         };
                     } else echo "<a>No groups with your user was found. Create a new group here!</a>"
                 ?></div>

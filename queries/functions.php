@@ -1,4 +1,8 @@
 <?php
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'];   // blob.lukasokken.com
+    $baseUrl = $protocol . $host . dirname($_SERVER['SCRIPT_NAME']);
+
     date_default_timezone_set("Europe/Oslo");
     function getDBConnection($db) {
         static $conn;

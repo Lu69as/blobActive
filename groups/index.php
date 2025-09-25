@@ -7,19 +7,20 @@
     if (!isset($queries["g"])) header("Location: ../");
     $pageGroup = $queries["g"];
         
-    $groupsUsersQuery = "SELECT g.groupId, g.name, gu.groupUserId, gu.userId, 
-        (select userId from groups_users gu_inner where gu_inner.groupId = gu.groupId ORDER BY gu_inner.groupUserId limit 1) AS adminUser
-        FROM groups g LEFT JOIN groups_users gu ON gu.groupId = g.groupId WHERE g.groupId = ".$pageGroup." GROUP BY gu.groupUserId";
+    $groupsUsersQuery = "SELECT g.groupId, g.groupName, gu.groupUserId, gu.userId, 
+        (select userId from group_users gu_inner where gu_inner.groupId = gu.groupId ORDER BY gu_inner.groupUserId limit 1) AS adminUser
+        FROM groups g LEFT JOIN group_users gu ON gu.groupId = g.groupId WHERE g.groupId = ".$pageGroup." GROUP BY gu.groupUserId";
     $groupsUsersResult = $connBlobActive->query($groupsUsersQuery);
 
     $firstRow = $groupsUsersResult->fetch_assoc();
     if ($firstRow === null) { header("Location: ../"); }
     $isAdmin = $firstRow["adminUser"] == $_COOKIE["blob_user"];
-    $groupName = $firstRow["name"];
+    $groupName = $firstRow["groupName"];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="<?php echo $baseUrl; ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" sizes="180x180" href="../img/favicon/apple-touch-icon.png">
@@ -74,13 +75,13 @@
                 $groupsUsersResult->data_seek(0);
                 while ($row = $groupsUsersResult->fetch_assoc()) {
                     echo "<tr><td data-label='User:'>".$row["userId"]."</td>";
-                    $plansUserQuery = "SELECT planId, name, weekday FROM plans WHERE groupId = ".$pageGroup." AND userId = '".$row["userId"]."'";
+                    $plansUserQuery = "SELECT planId, planName, weekday FROM plans WHERE groupId = ".$pageGroup." AND userId = '".$row["userId"]."'";
                     $plansUserResult = $connBlobActive->query($plansUserQuery);
 
                     $plansByDay = [];
                     if ($plansUserResult && $plansUserResult->num_rows > 0) {
                         while ($plan = $plansUserResult->fetch_assoc())
-                            $plansByDay[$plan["weekday"]][] = [$plan["planId"], $plan["name"]];
+                            $plansByDay[$plan["weekday"]][] = [$plan["planId"], $plan["planName"]];
                     }
 
                     for ($i = 1; $i <= 7; $i++) {

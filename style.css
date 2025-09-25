@@ -158,15 +158,6 @@ section.mainWidget {
     }
 
 
-    /* Styling for creating comments under posts */
-    .comment_creator form { 
-        margin-top: 15px;
-        transform: translateX(27px) !important;
-        width: calc(100% - 88px) !important;
-    }
-    .btnTxt { text-align: center; }
-
-
     .groups, .plans, .plan {
         margin-top: 35px;
         display: flex;
@@ -177,7 +168,7 @@ section.mainWidget {
         background: var(--post-bg);
         border-radius: 10px;
         width: calc(100% - 0px);
-        overflow: hidden;
+        /* overflow: hidden; */
         
         nav {
             padding: 15px;
@@ -284,7 +275,7 @@ section.mainWidget {
                 padding: 8px 25px 8px 25px;
                 font-size: 18px;
 
-                svg { width: 26px; }
+                svg { min-width: 26px; max-width: 26px; }
                 .g_name {
                     border-right: solid 2px var(--btn-clr);
                     width: 100%;
@@ -326,7 +317,7 @@ section.mainWidget {
         .planTable {
             table-layout: fixed;
             th { min-width: max-content; padding-right: 25px; }
-            .exer_name { width: 100%; }
+            .exer_name { width: 100%; font-weight: 600; text-transform: capitalize; }
 
             input {
                 border-radius: 4px;
@@ -335,10 +326,45 @@ section.mainWidget {
                 outline: none;
                 padding: 6px 12px;
                 width: calc(100% - 26px);
-                -moz-appearance: textfield;
             }
-            input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
-                -webkit-appearance: none; margin: 0;
+
+            tr[id^="exercise_"] td:not(:has(+ script)) { border: none !important; }
+            .set_row .set_row_setNote button {
+                position: absolute;
+                left: 0; top: 50%;
+                transform-origin: center;
+                transform: translate(20%, -60%) rotate(90deg);
+                font-size: 16px;
+                font-weight: 900;
+            }
+            tr[id^="exercise_"] + .set_row:has(+ .set_row.hide_set) .set_row_setNote button { transform: translate(20%, -60%) rotate(0deg); }
+            tr[id^="exercise_"] ~ tr[id^="exercise_"] th { padding-top: 15px !important; }
+            .set_row.hide_set { display: none; }
+
+            .set_row.add_set button { 
+                width: 100%;
+                text-align: left;
+                font-size: 15px;
+
+                span { font-weight: 900; }
+            }
+
+            .set_row .set_row_setNote, .set_row.add_set td {
+                padding-left: 25px;
+                position: relative;
+            }
+
+            .set_row .remove:not(:has(svg)) button {
+                font-size: 18px;
+                font-weight: 900;
+                position: relative;
+                height: 23px;
+                width: 18px;
+
+                span {
+                    position: absolute; left: 50%;
+                    transform: translate(-30%, -85%);
+                }
             }
 
             button {
@@ -352,9 +378,64 @@ section.mainWidget {
         }
         .underTableBtns {
             position: relative;
-            padding-inline: 25px;
+            padding-inline: 20px;
+            padding-bottom: 25px;
             display: flex;
             gap: 15px;
+
+            .add_exercise_id {
+                position: relative;
+                width: 100%;
+
+                input {
+                    width: calc(100% - 30px);
+                    border: solid 1px var(--post-border);
+                    outline: none !important;
+                    padding: 6px 15px;
+                    border-radius: 10px;
+                    font-size: 18px;
+                    background: #0001;
+                }
+
+                ul {
+                    width: 100%;
+                    position: absolute;
+
+                    top: calc(100% + 20px);
+                    opacity: 0;
+                    visibility: hidden;
+                    pointer-events: none;
+
+                    padding: 0;
+                    border: solid 1px var(--post-border);
+                    border-radius: 10px;
+                    background: #1c1a22;
+                    overflow: hidden;
+
+                    li {
+                        cursor: pointer;
+                        padding: 12px 12px;
+                        font-weight: 700;
+                    }
+                    li:nth-child(even) { background: #ffffff05; }
+                    li:nth-child(n+7) { display: none; }
+
+                    li:has(+ li) { padding-bottom: 8px; } li + li { padding-top: 6px; }
+                    li::marker { content: none; } li::before { content: "+ "; }
+                }
+                ul.open {
+                   top: calc(100% + 10px);
+                   opacity: 1;
+                   visibility: visible;
+                   pointer-events: auto;
+               }
+            }
+            .add_exercise {
+                width: fit-content !important;
+                border-radius: 10px;
+                padding: 6px 15px;
+            }
+            
 
             input {
                 width: 100%;
@@ -372,7 +453,7 @@ section.mainWidget {
                 border: solid 1px #8bc7e440;
                 background: #8bd3e40f;
             }
-            .finish_exercise:hover, .add_exercise:hover { box-shadow: inset 0 0 0 100vw #0001; }
+            input:hover, li:hover { box-shadow: inset 0 0 0 100vw #0001; }
         }
 
         .plan_history {
@@ -415,36 +496,20 @@ section.mainWidget {
     }
 
     .planTable tbody {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-
-        tr:has(th) { display: none; }
+        width: 100%;
+        .set_row .set_row_setNote button { display: none; }
         tr {
-            display: grid;
-            align-items: center;
-            gap: 0 5px;
-            grid-template-columns: repeat(1fr, 4);
-            grid-template-rows: auto;
-            grid-template-areas: 
-                "name name name name"
-                "sets sets reps reps"
-                "weight weight weight delete";
-
-            td { 
+            th { padding-bottom: 6px !important; }
+            td {
+                padding: 0 3px 8px !important;
                 min-width: 0 !important;
                 border: none !important;
                 width: 100%;
 
                 input { width: 100%; }
             }
-
-            .exer_name { grid-area: name; }
-            .exer_sets { grid-area: sets; }
-            .exer_reps { grid-area: reps; }
-            .exer_weight { grid-area: weight; }
-            td:not([class]) { grid-area: delete; }
         }
+        .set_row.hide_set { display: table-row !important; }
     }
 
     .groupTable {
@@ -475,8 +540,43 @@ section.mainWidget {
 
 /* Fixed up styling for mobile devices */
 @media (max-width: 450px) {
+    body {
+        width: calc(100vw - 30px);
+        padding: 15px;
+    }
     .editBtns, .underTableBtns { 
         flex-direction: column !important;
         .btn1 { width: calc(100% - 30px) !important; }
+    }
+
+    .groupsList > a {
+        svg { display: none; }
+    }
+
+    .planTable tbody {
+        display: flex;
+        flex-direction: column;
+
+        tr[id^="exercise_"], .set_row.add_set { 
+            display: flex;
+            th:not([class]) { display: none; }
+
+            th, td { width: 100%; }
+        }
+        .set_row:not(.add_set), .set_row.hide_set:not(.add_set) {
+            display: grid !important;
+            align-items: center;
+            column-gap: 5px;
+            grid-template-columns: repeat(2, 1fr);
+
+            .set_row_setNote {
+                grid-column-start: 1;
+                grid-column-end: 4;
+            }
+        }
+        .set_row:not(.add_set)::before, .set_row.hide_set:not(.add_set)::before {
+            content: attr(data-label);
+            margin: 0px 0px 4px 5px;
+        }
     }
 }
