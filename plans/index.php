@@ -7,10 +7,10 @@
     if (!isset($queries["p"])) header("Location: ../");
     $pagePlan = $queries["p"];
 
-    $exercisesPlanQuery = "SELECT p.groupId, p.planName, p.userId, e.exerciseId, e.exerciseName, pe.plan_exerciseId, count(s.setId) as setsNum,
-        group_concat(concat(s.setId, '||', s.setNote, '||', s.setLength , '||', s.weight) ORDER BY s.setId SEPARATOR '§§') as setsCol
+    $exercisesPlanQuery = "SELECT p.groupId, p.planName, p.userId, e.exerciseId, e.exerciseName, pe.plan_exerciseId, count(ps.plan_setId) as setsNum,
+        group_concat(concat(ps.plan_setId, '||', ps.plan_setNote, '||', ps.plan_setLength , '||', ps.plan_weight) ORDER BY ps.plan_setId SEPARATOR '§§') as setsCol
         FROM plans p LEFT JOIN plan_exercise pe ON pe.planId = p.planId LEFT JOIN exercises e ON pe.exerciseId = e.exerciseId 
-        LEFT JOIN sets s ON s.plan_exerciseId = pe.plan_exerciseId WHERE p.planId = ".$pagePlan." GROUP BY pe.plan_exerciseId";
+        LEFT JOIN plan_sets ps ON ps.plan_exerciseId = pe.plan_exerciseId WHERE p.planId = $pagePlan GROUP BY pe.plan_exerciseId";
     $exercisesPlanResult = $connBlobActive->query($exercisesPlanQuery);
 
     $firstRow = $exercisesPlanResult->fetch_assoc();
@@ -37,7 +37,10 @@
         <div class="editBtns">
             <a class="backBtn btn1" href="../groups/?g=<?php echo $firstRow["groupId"] ?>">Back</a>
             <?php if ($isAdmin) { ?>
-                <a class="edit btn1" onclick="document.querySelector('.editForm').classList.toggle('invisible')">Edit Plan</a>
+                <a class="edit btn1" onclick="document.querySelector('.editForm').classList.toggle('invisible');
+                    document.querySelector('.plan').classList.toggle('editingMode');">Edit Plan</a>
+
+                <a title="Save as today's workout" class="workout btn1">Save Workout</a>
             <?php }; ?>
         </div>
         <div class="plan"><nav><?php
@@ -72,10 +75,10 @@
                         for ($i = 0; $i < count($sets); $i++) {
                             $setInfo = explode("||", $sets[$i]);
 
-                            echo "<tr class='set_row' id='set_$setInfo[0]' data-label='Set ".($i + 1).":'><td class='set_row_setNote'><input type='text' 
+                            echo "<tr class='set_row' id='set_$setInfo[0]' data-label='Set ".($i + 1).":'><td class='set_row_plan_setNote'><input type='text' 
                                 placeholder='Notes for Set' value='$setInfo[1]'>".($i == 0 ? "<button onClick='toggleSetsView(this.parentElement.parentElement)'>></button>
-                                </td>" : "</td>")."<td class='set_row_setLength'><input type='text' placeholder='Reps / time' inputmode='numeric' value='$setInfo[2]'></td>
-                                <td class='set_row_weight'><input type='text' placeholder='Weight' value='$setInfo[3]'></td>";
+                                </td>" : "</td>")."<td class='set_row_plan_setLength'><input type='text' placeholder='Reps / time' inputmode='numeric' value='$setInfo[2]'></td>
+                                <td class='set_row_plan_weight'><input type='text' placeholder='Weight' value='$setInfo[3]'></td>";
                             
                             if ($isAdmin && $i == 0) echo "<td class='remove'><form action='../queries/exercise-update.php' method='post'><button type='submit'
                                 title='Remopve exercise from plan'>".file_get_contents('../img/icons/trash.svg')."</button><input name='remove_exercise' type='hidden' 
@@ -86,10 +89,11 @@
 
                             else echo "<td class='remove'></td></tr>";
                         }
-                        if ($isAdmin) echo "<tr class='set_row add_set'><td><form action='../queries/exercise-update.php' method='post'><button type='submit' 
-                            title='Add set to exercise'><span>+</span> Add set to exercise</button><input name='add_set' type='hidden' value='$currentExercise'/></form></td></tr>";
+                        if ($isAdmin) echo "<tr class='set_row add_set'><td colspan='4'><form action='../queries/exercise-update.php' method='post'><button type='submit' 
+                            title='Add set to exercise'><span>+</span> Add new set to exercise</button><input name='add_set' type='hidden' value='$currentExercise'/></form>
+                            </td></tr>";
                     }
-                }
+                } else echo "<h4 style='padding-inline:15px;opacity:.8'>Not a lot going on here...</h4>";
             ?>
         </table>
         <?php if ($isAdmin) { ?>
@@ -106,10 +110,34 @@
                     ?></ul>
                 </div>
                 <input class="add_exercise" type="submit" name="add_exercise" value="+ Add exercise"/>
-                <!-- <input class="finish_exercise" type="submit" name="finish_exercise" value="✓ Add to history"/> -->
             </form>
         <?php }; ?>
     </div>
+    <div class="plan workoutHistory"><?php
+        $workoutsPlanQuery = "SELECT w.workoutId, w.workout_date, ROW_NUMBER() OVER (PARTITION BY ws.workout_exerciseId ORDER BY ws.workout_setId) AS setNum, 
+            e.exerciseId, e.exerciseName, ws.workout_setLength, ws.workout_weight, ws.workout_setNote from workout_sets ws
+            join workout_exercise we on we.workout_exerciseId = ws.workout_exerciseId join exercises e on e.exerciseId = we.exerciseId
+            join workouts w on w.workoutId = we.workoutId where w.planId = $pagePlan";
+        $workoutsPlanResult = $connBlobActive->query($workoutsPlanQuery);
+
+        if ($workoutsPlanResult->num_rows > 0) {
+            $currentDate = 0;
+            $currentSet = 999;
+            while ($row = $workoutsPlanResult->fetch_assoc()) {
+
+                if ($row["setNum"] < $currentSet ) {
+                    if ($currentSet != 999) echo "</div>";
+                    if ($currentDate != $row["workout_date"]) echo ($currentDate != 0 ? "</div>" : "")."<div><h2>".$row["workout_date"].":</h2>";
+
+                    echo "<div id='workout_".$row["workoutId"]."' class='exercise'><h3>".$row["exerciseName"].":</h3>
+                        <p>Set ".$row["setNum"].": ".$row["workout_setLength"]." - ".$row["workout_weight"]."</p>";
+                }
+                else echo "<p>Set ".$row["setNum"].": ".$row["workout_setLength"]." - ".$row["workout_weight"]."</p>";
+                $currentDate = $row["workout_date"];
+                $currentSet = $row["setNum"];
+            }
+        } else echo "<h4>This plan has no history. Yet...</h4>";
+    ?></div>
     </section>
     <script src="../script.js"></script>
 </body>

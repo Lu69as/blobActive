@@ -1,3 +1,4 @@
+// Check if login / signup form is valid
 function checkForm(f) {
     if (f.checkValidity()) {
         f.querySelector(`button`).classList.remove("invalid");
@@ -27,6 +28,7 @@ function updateNewHistory() {
 }
 
 
+// Toggle set rows to be viewed or not
 function toggleSetsView(row) {
     let previousCheck = row.nextElementSibling;
     while (previousCheck != false) {
@@ -41,7 +43,7 @@ function toggleSetsView(row) {
 }
 
 
-
+// All code running after site has loaded
 window.addEventListener("load", () => {
     // if (location.href.includes("/plans/")) updateNewHistory();
     document.querySelectorAll(".set_row td > input").forEach((e) =>
@@ -52,12 +54,27 @@ window.addEventListener("load", () => {
 
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.onreadystatechange = function() { if (this.readyState == 4 && this.status == 200) console.log("Updated DB") };
-            xmlhttp.open("GET", `../queries/exercise-update.php?id=${id}&col=${col}&val=${e.value}`, true);
+            xmlhttp.open("GET", `../queries/exercise-update.php?update_id=${id}&col=${col}&val=${e.value}`, true);
             xmlhttp.send();
         })
     )
 
 
+    
+    document.querySelectorAll(".editBtns .workout").forEach((e) =>
+        e.addEventListener("click", () => {
+            let id = new URLSearchParams(window.location.search).get("p");
+            if (id == null) return;
+
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() { if (this.readyState == 4 && this.status == 200) console.log("Saved workout") };
+            xmlhttp.open("GET", `../queries/exercise-update.php?save_id=${id}`, true);
+            xmlhttp.send();
+        })
+    )
+
+
+    // Code for adding an exercise to the plan
     document.querySelectorAll(".add_exercise_id .add_exercise_search").forEach((e) => {
         e.addEventListener("keydown", (evt) => { if (evt.key == "Enter") evt.preventDefault() })
 
@@ -67,7 +84,8 @@ window.addEventListener("load", () => {
 
         e.addEventListener("focus", () => { ul.classList.add("open") })
         e.addEventListener("blur", () => { setTimeout(() => ul.classList.remove("open"), 400) })
-            
+        
+        // Check if it should make a new exercise or just add an existing one
         ul.childNodes.forEach((c) => c.addEventListener("click", () => {
             ul.classList.remove("open");
             let query = e.value.toLowerCase();
@@ -89,6 +107,7 @@ window.addEventListener("load", () => {
             if (!hasDoneCode) hiddenField.value = "addNew";
         }))
 
+        // Sort the exercises in box by what is in search field
         e.addEventListener("input", () => {
             let query = e.value.toLowerCase();
 
@@ -114,15 +133,22 @@ window.addEventListener("load", () => {
             });
         })
     })
-    document.querySelectorAll("tr[id^='exercise_'] + .set_row").forEach((e) => toggleSetsView(e) )
+    // document.querySelectorAll("tr[id^='exercise_'] + .set_row").forEach((e) => toggleSetsView(e) )
 
 
+    // Confirm if user want to delete domething
+    document.querySelectorAll(".set_row .remove button").forEach((e) => 
+        e.addEventListener("click", (evt) => { if (!confirm("Are you sure you want to " + e.getAttribute("title").toLowerCase())) evt.preventDefault() }))
+
+
+    // Only allow typing of certain characters in input fields across the site
     document.querySelectorAll(`input[inputmode='numeric']`).forEach((e) => 
         e.addEventListener('input', () => { e.value = e.value.replace(/[^0-9]/g, '') }))
     document.querySelectorAll(`input:not([inputmode='numeric'])`).forEach((e) => 
         e.addEventListener('input', () => { e.value = e.value.replace(/[^A-Za-z0-9?!$%&', ]/g, '') }))
 
 
+    // Validate log in / sign up form
     document.querySelectorAll("form:is(.sign_up, .log_in)").forEach((e) => { checkForm(e);
         e.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => checkForm(e)));
         e.addEventListener("submit", (s) => {
@@ -130,7 +156,7 @@ window.addEventListener("load", () => {
         })
     })
 
-
+    // Click on log in / sign up to change
     document.querySelectorAll(".login_tabs > div").forEach((e) =>
         e.addEventListener("click", () => {
             let s = document.querySelector(".login_tabs div:not(."+ e.classList[0] +")");
