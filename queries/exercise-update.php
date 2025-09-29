@@ -1,6 +1,7 @@
 <?php
     require_once "../queries/functions.php";
     $connBlobActive = getDBConnection("blob_active");
+    $output = false;
 
     if (isset($_POST) && !empty($_POST)) {
         $query = "";
@@ -14,7 +15,7 @@
                 $connBlobActive->query("INSERT into plan_exercise (planId, exerciseId) values (".$_POST['page_plan'].", $exerciseId)");
                 $exerciseId = $connBlobActive->insert_id;
                 $query = "INSERT into plan_sets (plan_exerciseId) values ($exerciseId)";
-                break;
+            break;
 
             case isset($_POST['remove_exercise']): $query = "DELETE FROM plan_exercise WHERE plan_exerciseId = ".$_POST['remove_exercise']; break;
             case isset($_POST['remove_set']): $query = "DELETE FROM plan_sets WHERE plan_setId = ".$_POST['remove_set']; break;
@@ -23,7 +24,7 @@
             case isset($_POST['addPlanBtn']):
                 $ps = explode("§", $_POST['additional']);
                 $query = "INSERT INTO plans (groupId, userId, planName, weekday) VALUES ($ps[0],'".$ps[1]."','New plan',".$ps[2].")";
-                break;
+            break;
 
             case isset($_POST['rename_plan']): $query = "UPDATE plans SET planName = '".$_POST['rename_plan_txt']."' WHERE planId = ".$_POST['page_plan']; break;
             case isset($_POST['delete_plan']): $query = "DELETE FROM plans WHERE planId = ".$_POST['page_plan']; break;
@@ -34,35 +35,76 @@
                 $query = "INSERT INTO group_users (groupId, userId) VALUES";
                 $users = explode(",", $_POST['add_user_group_txt']);
                 foreach ($users as $usr) $query .= ($usr == $users[0] ? "" : ",")." (".$_POST['page_group'].", '$usr')";
-                break;
+            break;
 
             case isset($_POST['remove_user_group']): $query = "DELETE FROM group_users WHERE groupUserId = ".$_POST['page_group_user']; break;
 
             case isset($_POST['add_group']):
                 $connBlobActive->query("INSERT INTO groups (groupName) VALUES ('New group')");
                 $query = "INSERT INTO group_users (groupId, userId) VALUES (".$connBlobActive->insert_id.", '".$_POST['add_group_userId']."')";
-                break;
+            break;
         }
         $connBlobActive->query($query);
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
     }
-    
-    if(intval($_GET['update_id']))
-        $connBlobActive->query("UPDATE plan_sets SET ".$_GET['col']." = '".$_GET['val']."' where plan_setId = ".$_GET['update_id']);
+    else {
+        switch (true) {
+            case isset($_GET['update_id']): 
+                $connBlobActive->query("UPDATE plan_sets SET ".$_GET['col']." = '".$_GET['val']."' where plan_setId = ".$_GET['update_id']);
+            break;
 
-    else if(intval($_GET['save_id'])) {
-        $plan_id = $_GET['save_id'];
-        $connBlobActive->query("INSERT into workouts (planId) values ($plan_id);"); 
-        $workoutId = $connBlobActive->insert_id;
+            case isset($_GET['history_id']):
+                $sort = $_GET['sort'] == "exercises"; $output = "";
+                $workoutsPlanQuery = "SELECT w.workoutId, w.workout_date, ROW_NUMBER() OVER (PARTITION BY ws.workout_exerciseId ORDER BY ws.workout_setId) AS setNum, 
+                    e.exerciseId, e.exerciseName, ws.workout_setLength, ws.workout_weight, ws.workout_setNote from workout_sets ws
+                    join workout_exercise we on we.workout_exerciseId = ws.workout_exerciseId join exercises e on e.exerciseId = we.exerciseId
+                    join workouts w on w.workoutId = we.workoutId where w.planId = ".$_GET['history_id'].($sort ? " ORDER BY exerciseId, workout_date, workoutId, setNum" : "");
+                $workoutsPlanResult = $connBlobActive->query($workoutsPlanQuery);
+                
+                if ($workoutsPlanResult->num_rows > 0) {
+                    $currentRow = 0; $currentSet = 999;
+                    while ($row = $workoutsPlanResult->fetch_assoc()) {
+                        if ($row["setNum"] < $currentSet && $sort) {
+                            if ($currentRow != $row["exerciseName"]) $output .= "</div>";
+                            if ($currentRow != 0) $output .= "</div>";
 
-        $connBlobActive->query("INSERT into workout_exercise (workoutId, exerciseId) select $workoutId, e.exerciseId from plan_exercise pe 
-	        join exercises e on e.exerciseId = pe.exerciseId where pe.planId = $plan_id;"); 
-        $workout_exerciseId = $connBlobActive->insert_id;
-        
-        $connBlobActive->query("INSERT into workout_sets (workout_exerciseId, workout_setNote, workout_setLength, workout_weight) 
-            select we.workout_exerciseId, ps.plan_setNote, ps.plan_setLength, ps.plan_weight from plan_sets ps
-            join plan_exercise pe on pe.plan_exerciseId = ps.plan_exerciseId JOIN workout_exercise we ON we.exerciseId = pe.exerciseId 
-            AND we.workoutId = $workoutId where pe.planId = $plan_id;");
+                            if ($currentRow != $row["exerciseName"]) $output .= "<div class='historyParent'><h2>".$row["exerciseName"].":</h2>";
+                            $output .= "<div id='workout_".$row["workoutId"]."' class='exercise'><h3>".$row["workout_date"].":</h3>
+                                <p>Set ".$row["setNum"].": ".$row["workout_setLength"]." - ".$row["workout_weight"]."</p>";
+                            $currentRow = $row["exerciseName"];
+                        }
+                        else if ($row["setNum"] < $currentSet) {
+                            if ($currentRow != $row["workout_date"]) $output .= "</div>";
+                            if ($currentRow != 0) $output .= "</div>";
+
+                            if ($currentRow != $row["workout_date"]) $output .= "<div class='historyParent'><h2>".$row["workout_date"].":</h2>";
+                            $output .= "<div id='workout_".$row["workoutId"]."' class='exercise'><h3>".$row["exerciseName"].":</h3>
+                                <p>Set ".$row["setNum"].": ".$row["workout_setLength"]." - ".$row["workout_weight"]."</p>";
+                            $currentRow = $sort ? $row["exerciseName"] : $row["workout_date"];
+                        }
+                        else $output .= "<p>Set ".$row["setNum"].": ".$row["workout_setLength"]." - ".$row["workout_weight"]."</p>";
+                        $currentSet = $row["setNum"];
+                    }
+                } else $output = "<h4>This plan has no history. Yet...</h4>";
+            break;
+
+            case isset($_GET['save_id']):
+                $plan_id = $_GET['save_id'];
+                $connBlobActive->query("INSERT into workouts (planId) values ($plan_id);"); 
+                $workoutId = $connBlobActive->insert_id;
+
+                $connBlobActive->query("INSERT into workout_exercise (workoutId, exerciseId) select $workoutId, e.exerciseId from plan_exercise pe 
+                    join exercises e on e.exerciseId = pe.exerciseId where pe.planId = $plan_id;"); 
+                $workout_exerciseId = $connBlobActive->insert_id;
+                
+                $connBlobActive->query("INSERT into workout_sets (workout_exerciseId, workout_setNote, workout_setLength, workout_weight) 
+                    select we.workout_exerciseId, ps.plan_setNote, ps.plan_setLength, ps.plan_weight from plan_sets ps
+                    join plan_exercise pe on pe.plan_exerciseId = ps.plan_exerciseId JOIN workout_exercise we ON we.exerciseId = pe.exerciseId 
+                    AND we.workoutId = $workoutId where pe.planId = $plan_id;");
+            break;
+        }
     }
+
+    if ($output) echo $output;
+    else header('Location: ' . $_SERVER['HTTP_REFERER']);
     exit;
 ?>

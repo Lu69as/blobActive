@@ -10,24 +10,6 @@ function checkForm(f) {
 }
 
 
-function updateNewHistory() {
-    let arr = [];
-    let json = JSON.parse(document.querySelector("input[name='currentPlanHistory']").value);
-    if (json.length > 0) json.forEach(e => arr.push(e) );
-    let lastDate = arr[0] == undefined ? null : arr[0].date;
-
-    let dateArr = { date: new Date().toLocaleDateString('en-GB'), exercises: [] };
-    document.querySelectorAll(".planTable tr:not(:has(th))").forEach((e) => {
-        dateArr.exercises.push(`${e.children[0].firstChild.value}: 
-            ${e.children[1].firstChild.value}x${e.children[2].firstChild.value}
-            - ${e.children[3].firstChild.value}`.replace(/\s+/g, " ").trim())
-    }); if (lastDate != dateArr.date) arr.push(dateArr);
-
-    arr.sort((a, b) => b.date.split('/').reverse().join('') - a.date.split('/').reverse().join(''));
-    document.querySelector("input[name='newPlanHistory']").value = JSON.stringify(arr);
-}
-
-
 // Toggle set rows to be viewed or not
 function toggleSetsView(row) {
     let previousCheck = row.nextElementSibling;
@@ -43,12 +25,25 @@ function toggleSetsView(row) {
 }
 
 
+// Update history section of a plan site
+function getPlanHistory(planId, sort) {
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            document.querySelector(".plan.workoutHistory > div").innerHTML = xmlhttp.responseText;
+            document.querySelectorAll(".plan.workoutHistory > div h2").forEach((e) => 
+                e.addEventListener("click", () => e.parentElement.classList.toggle("showChildren") ));
+        }
+    };
+    xmlhttp.open("GET", `../queries/exercise-update.php?history_id=${planId}&sort=${sort}`, true);
+    xmlhttp.send();
+}
+
+
 // All code running after site has loaded
 window.addEventListener("load", () => {
-    // if (location.href.includes("/plans/")) updateNewHistory();
     document.querySelectorAll(".set_row td > input").forEach((e) =>
         e.addEventListener("change", () => {
-            // updateNewHistory();
             let id = e.parentElement.parentElement.id.replace("set_", "");
             let col = e.parentElement.classList[0].replace("set_row_", "");
 
@@ -58,8 +53,6 @@ window.addEventListener("load", () => {
             xmlhttp.send();
         })
     )
-
-
     
     document.querySelectorAll(".editBtns .workout").forEach((e) =>
         e.addEventListener("click", () => {
@@ -145,7 +138,7 @@ window.addEventListener("load", () => {
     document.querySelectorAll(`input[inputmode='numeric']`).forEach((e) => 
         e.addEventListener('input', () => { e.value = e.value.replace(/[^0-9]/g, '') }))
     document.querySelectorAll(`input:not([inputmode='numeric'])`).forEach((e) => 
-        e.addEventListener('input', () => { e.value = e.value.replace(/[^A-Za-z0-9?!$%&', ]/g, '') }))
+        e.addEventListener('input', () => { e.value = e.value.replace(/[^A-Za-z0-9?!$%&',. ]/g, '') }))
 
 
     // Validate log in / sign up form

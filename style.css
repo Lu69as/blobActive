@@ -405,6 +405,7 @@ section.mainWidget {
                 ul {
                     width: 100%;
                     position: absolute;
+                    z-index: +999;
 
                     top: calc(100% + 20px);
                     opacity: 0;
@@ -483,22 +484,45 @@ section.mainWidget {
     }
 
     .workoutHistory {
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        gap: 25px;
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
 
-        > div {
+            .sortBtns {
+                display: flex;
+                gap: 10px;
+
+                button {
+                    font-size: 16px;
+                    padding: 6px 12px;
+                    background: #0001;
+                }
+            }
+        }
+        
+        .historyParent ~ .historyParent { margin-top: 25px; }
+        .historyParent, h4 {
             display: flex;
             flex-direction: column;
+            padding: 0 15px;
             gap: 15px;
-
-            h2 { opacity: .9; }
-            h3 { opacity: .8; }
+            
+            h2 { 
+                opacity: .9;
+                cursor: pointer;
+                text-transform: capitalize;
+            }
+            h3 { opacity: .8 }
             p { opacity: .7 }
         }
+        .historyParent:not(.showChildren) > div { display: none; }
     }
 }
+
+
+                
 
 
 /* Fixed up styling for mobile devices */
