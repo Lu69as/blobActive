@@ -20,7 +20,7 @@
         }
     }
     else {
-        $mainPostsQuery = "SELECT * from users where userID = '".$_POST['userId']."' and password = '".$_POST['password']."'";
+        $mainPostsQuery = "SELECT * from users where userID = '{$_POST['userId']}' and password = '{$_POST['password']}'";
         $mainPostsResult = $conn->query($mainPostsQuery);
 
         if ($mainPostsResult->num_rows > 0) {

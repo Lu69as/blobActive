@@ -1,5 +1,4 @@
-1. Be able to move exercises in plan before and after otehr exercises
-2. Somehow edit a plan's history so you can add stuff before you got the app
-3. Be able to view the plans under /groups/ not in a weekly format
+1. Be able to move exercises in plan before and after other exercises
+2. Be able to view the plans under /groups/ not in a weekly format
 
 X. If you think something else should be fixed / added, don't be scared to reach out using the issues tab in GitHub!

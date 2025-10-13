@@ -31,12 +31,32 @@ function getPlanHistory(planId, sort) {
     xmlhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
             document.querySelector(".plan.workoutHistory > div").innerHTML = xmlhttp.responseText;
-            document.querySelectorAll(".plan.workoutHistory > div h2").forEach((e) => 
-                e.addEventListener("click", () => e.parentElement.classList.toggle("showChildren") ));
+            document.querySelectorAll(".plan.workoutHistory > div h2").forEach((e) =>
+                e.addEventListener("click", () => {
+                    if (e.children.length == 0 || !e.querySelector("b").hasAttribute("contenteditable"))
+                        e.parentElement.classList.toggle("showChildren")
+                })
+            )
         }
-    };
+    }
     xmlhttp.open("GET", `../queries/exercise-update.php?history_id=${planId}&sort=${sort}`, true);
     xmlhttp.send();
+}
+
+
+function toggleEditHistory() {
+    document.querySelectorAll("b.historyEditField").forEach((e) => {
+        if (!e.classList.contains("editable")) {
+            e.addEventListener("input", () => {
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function() { console.log("Updated") };
+                xmlhttp.open("GET", `../queries/exercise-update.php?${e.getAttribute("data-label")}&val=${e.innerText}`, true);
+                xmlhttp.send();
+            })
+            e.classList.add("editable");
+        }
+        e.toggleAttribute("contenteditable");
+    })
 }
 
 
@@ -49,7 +69,7 @@ window.addEventListener("load", () => {
 
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.onreadystatechange = function() { if (this.readyState == 4 && this.status == 200) console.log("Updated DB") };
-            xmlhttp.open("GET", `../queries/exercise-update.php?update_id=${id}&col=${col}&val=${e.value}`, true);
+            xmlhttp.open("GET", `../queries/exercise-update.php?table=plan_sets&tableId=plan_setId&update_id=${id}&col=${col}&val=${e.value}`, true);
             xmlhttp.send();
         })
     )

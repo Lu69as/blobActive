@@ -477,10 +477,21 @@ section.mainWidget {
         }
     }
     .plans { padding-bottom: 15px; }
-    .plan:not(.editingMode) {
+    .plan:not(.editingMode), .plan.workoutHistory {
         padding-bottom: 15px;
         td.remove, .set_row.add_set, .underTableBtns { display: none; }
         td:has(+ .remove) { border-right: none; }
+    }
+
+    /* contenteditable="true" */
+    b.historyEditField {
+        font-weight: 700;
+        outline: none !important;
+        padding-bottom: 0px;
+        border-bottom: 2px solid #e18be420;
+    }
+    b.historyEditField:focus {
+        border-color: #e18be440;
     }
 
     .workoutHistory {
@@ -513,8 +524,11 @@ section.mainWidget {
                 opacity: .9;
                 cursor: pointer;
                 text-transform: capitalize;
+
+                span { opacity: .4; }
             }
-            h3 { opacity: .8 }
+            h3 { opacity: .8; text-transform: capitalize; }
+            h3 span { opacity: .4; }
             p { opacity: .7 }
         }
         .historyParent:not(.showChildren) > div { display: none; }

@@ -9,7 +9,7 @@
         
     $groupsUsersQuery = "SELECT g.groupId, g.groupName, gu.groupUserId, gu.userId, 
         (select userId from group_users gu_inner where gu_inner.groupId = gu.groupId ORDER BY gu_inner.groupUserId limit 1) AS adminUser
-        FROM groups g LEFT JOIN group_users gu ON gu.groupId = g.groupId WHERE g.groupId = ".$pageGroup." GROUP BY gu.groupUserId";
+        FROM groups g LEFT JOIN group_users gu ON gu.groupId = g.groupId WHERE g.groupId = $pageGroup GROUP BY gu.groupUserId";
     $groupsUsersResult = $connBlobActive->query($groupsUsersQuery);
 
     $firstRow = $groupsUsersResult->fetch_assoc();
@@ -61,8 +61,8 @@
             <?php if ($groupsUsersResult->num_rows > 1) {
                 echo "<div class='usersRemove'>";
                 while ($user = $groupsUsersResult->fetch_assoc())
-                    echo "<form action='../queries/exercise-update.php' method='post'><input type='hidden' name='page_group_user' value='".$user["groupUserId"]."'/>
-                        <button class='btn1' type='submit' name='remove_user_group'>".$user["userId"]."</button></form>";
+                    echo "<form action='../queries/exercise-update.php' method='post'><input type='hidden' name='page_group_user' value='{$user['groupUserId']}'/>
+                        <button class='btn1' type='submit' name='remove_user_group'>{$user['userId']}</button></form>";
                 echo "</div>";
             }; ?>
         </div><?php }; ?>
@@ -70,12 +70,12 @@
         <table class="groupTable">
             <tr><th>User</th><?php
                 $weekdayNames = [1=>"Monday", 2=>"Tuesday", 3=>"Wednesday", 4=>"Thursday", 5=>"Friday", 6=>"Saturday", 7=>"Sunday"];
-                foreach ($weekdayNames as $dayNum => $dayName) echo "<th>".$dayName."</th>";
+                foreach ($weekdayNames as $dayNum => $dayName) echo "<th>$dayName</th>";
             ?></tr><?php
                 $groupsUsersResult->data_seek(0);
                 while ($row = $groupsUsersResult->fetch_assoc()) {
-                    echo "<tr><td data-label='User:'>".$row["userId"]."</td>";
-                    $plansUserQuery = "SELECT planId, planName, weekday FROM plans WHERE groupId = ".$pageGroup." AND userId = '".$row["userId"]."'";
+                    echo "<tr><td data-label='User:'>{$row['userId']}</td>";
+                    $plansUserQuery = "SELECT planId, planName, weekday FROM plans WHERE groupId = $pageGroup AND userId = '{$row['userId']}'";
                     $plansUserResult = $connBlobActive->query($plansUserQuery);
 
                     $plansByDay = [];
@@ -85,11 +85,11 @@
                     }
 
                     for ($i = 1; $i <= 7; $i++) {
-                        if (!empty($plansByDay[$i])) echo "<td data-label='".$weekdayNames[$i].":'>
-                            <a href='../plans?p=".$plansByDay[$i][0][0]."'>".$plansByDay[$i][0][1]."</a></td>";
+                        if (!empty($plansByDay[$i])) echo "<td data-label='$weekdayNames[$i]:'>
+                            <a href='../plans?p={$plansByDay[$i][0][0]}'>{$plansByDay[$i][0][1]}</a></td>";
                         else if (isset($_COOKIE["blob_user"]) && $row["userId"] == $_COOKIE["blob_user"])
-                            echo "<td data-label='".$weekdayNames[$i].":'><form class='underTableBtns' action='../queries/exercise-update.php' method='post'>
-                                <input type='hidden' name='additional' value='".$pageGroup."§".$_COOKIE["blob_user"]."§".$i."§'/>
+                            echo "<td data-label='$weekdayNames[$i]:'><form class='underTableBtns' action='../queries/exercise-update.php' method='post'>
+                                <input type='hidden' name='additional' value='{$pageGroup}§{$_COOKIE['blob_user']}§{$i}§'/>
                                 <input class='addPlanBtn' type='submit' name='addPlanBtn' value='+'/></form></td>";
                         else echo "<td></td>";
                     } echo "</tr>";

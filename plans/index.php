@@ -14,7 +14,7 @@
     $exercisesPlanResult = $connBlobActive->query($exercisesPlanQuery);
 
     $firstRow = $exercisesPlanResult->fetch_assoc();
-    if ($firstRow === null) { header("Location: ../"); }
+    if ($firstRow === null || !isset($_COOKIE["blob_user"])) { header("Location: ../"); }
     
     $isAdmin = $firstRow["userId"] == $_COOKIE["blob_user"];
     $planName = $firstRow["planName"];
@@ -38,14 +38,14 @@
             <a class="backBtn btn1" href="../groups/?g=<?php echo $firstRow["groupId"] ?>">Back</a>
             <?php if ($isAdmin) { ?>
                 <a class="edit btn1" onclick="document.querySelector('.editForm').classList.toggle('invisible');
-                    document.querySelector('.plan').classList.toggle('editingMode');">Edit Plan</a>
+                    document.querySelectorAll('.plan').forEach((e) => e.classList.toggle('editingMode')); toggleEditHistory();">Edit Plan</a>
 
                 <a title="Save as today's workout" class="workout btn1">Save Workout</a>
             <?php }; ?>
         </div>
         <div class="plan"><nav><?php
-            echo '<h1>Blob<span>Active</span></h1><h3>Logged in as <span>'.$_COOKIE["blob_user"].'</span>
-                 - Viewing exercise plan: <span>'.$planName.'</span></h3>';
+            echo "<h1>Blob<span>Active</span></h1><h3>Logged in as <span>{$_COOKIE['blob_user']}</span>
+                 - Viewing exercise plan: <span>$planName</span></h3>";
         ?></nav>
         <?php if ($isAdmin) { ?>
             <div class="editForm <?php if ($groupName != "New group") echo "invisible" ?>">
@@ -64,7 +64,7 @@
                     while ($row = $exercisesPlanResult->fetch_assoc()) {
                         $currentExercise = $row["plan_exerciseId"];
                         echo "<tr id='exercise_$currentExercise'>
-                            <th class='exer_name'>".$row["exerciseName"]." - Notes</th>
+                            <th class='exer_name'>{$row['exerciseName']} - Notes</th>
                             <th>Reps / Time</th><th>Weight</th>";
 
                         if (!$isAdmin) echo "<script>document.querySelectorAll('.planTable input, .planTable button').forEach((e) => {
@@ -86,7 +86,6 @@
 
                             else if ($isAdmin) echo "<td class='remove'><form action='../queries/exercise-update.php' method='post'><button type='submit'
                                 title='Remove set from exercise'><span>_</span></button><input name='remove_set' type='hidden' value='$setInfo[0]'/></form></td></tr>";
-
                             else echo "<td class='remove'></td></tr>";
                         }
                         if ($isAdmin) echo "<tr class='set_row add_set'><td colspan='4'><form action='../queries/exercise-update.php' method='post'>
@@ -106,7 +105,7 @@
                         $exerciseListQuery = "SELECT exerciseId, exerciseName FROM exercises";
                         $exerciseListResult = $connBlobActive->query($exerciseListQuery);
                         if ($exerciseListResult->num_rows > 0) while ($row = $exerciseListResult->fetch_assoc()) 
-                            echo "<li id='exercise_".$row["exerciseId"]."'>".$row["exerciseName"]."</li>";
+                            echo "<li id='exercise_{$row['exerciseId']}'>{$row['exerciseName']}</li>";
                     ?></ul>
                 </div>
                 <input class="add_exercise" type="submit" name="add_exercise" value="+ Add exercise"/>
